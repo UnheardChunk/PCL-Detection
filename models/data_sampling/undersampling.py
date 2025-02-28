@@ -1,4 +1,5 @@
 from imblearn.under_sampling import ClusterCentroids
+from imblearn.under_sampling import RandomUnderSampler
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 
@@ -9,7 +10,7 @@ dataset.head()
 dataset.loc[dataset["text"].isna(), "text"] = ""
 dataset["label"] = dataset["orig_label"].apply(lambda x : 0 if (x == 0 or x == 1) else 1)
 
-def undersample(df):
+def undersample_CC(df):
 
     X = df['text']
     y = df['label']
@@ -27,8 +28,26 @@ def undersample(df):
 
     return df_resampled
 
-# Display the class distribution after undersampling
+def undersample_random(df):
+    # Extract features and labels
+    X = df['text'].values.reshape(-1, 1)  # Reshape needed for RandomUnderSampler
+    y = df['label']
+
+    # Initialize and apply RandomUnderSampler
+    rus = RandomUnderSampler(random_state=42)
+    X_resampled, y_resampled = rus.fit_resample(X, y)
+
+    # Convert back to DataFrame
+    df_resampled = pd.DataFrame({'text': X_resampled.flatten(), 'label': y_resampled})
+
+    return df_resampled
+
+# Display the class distribution before undersampling
+print(dataset.head())
 print(dataset['label'].value_counts())
+
+df = undersample_random(dataset)
 print("After undersampling\n")
-print(undersample(dataset)['label'].value_counts())
+print(df['label'].value_counts())
+print(df.head())
 
