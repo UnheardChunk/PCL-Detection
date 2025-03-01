@@ -2,22 +2,28 @@ import re
 import pandas as pd
 
 # Uncomment below when running for the first time to download data
-#import nltk
-#nltk.download('stopwords',download_dir="../../nlpenv/nltk_data")
-#nltk.download('punkt_tab',download_dir="../../nlpenv/nltk_data")
+# import nltk
+# nltk.download('stopwords',download_dir="../../nlpenv/nltk_data")
+# nltk.download('punkt_tab',download_dir="../../nlpenv/nltk_data")
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+
 
 def remove_stop_words(text):
     stop_words = set(stopwords.words('english'))
     word_tokens = word_tokenize(text)
-    
+
     filtered_sentence = [w for w in word_tokens if not w.lower() in stop_words]
     return " ".join(filtered_sentence)
 
+
 def remove_punctuation(text):
     return re.sub(r"[^\w\s]|_", "", text)
+
 
 def preprocess_dataset(dataset):
     # Remove punctuation from the text
@@ -25,11 +31,17 @@ def preprocess_dataset(dataset):
 
     # Remove stop words from text
     dataset["text"] = dataset["text"].apply(remove_stop_words)
-    
+
     # Apply any other preprocessing steps here
     # ...
-    
+
     return dataset
+
+
+def lemmatize(text):
+    doc = nlp(text)
+    return " ".join([token.lemma_ for token in doc])
+
 
 if __name__ == "__main__":
     text = "Hello, world!@£$%^&*()_+{}[]:;\"'<>,.?/~`-="
@@ -40,6 +52,6 @@ if __name__ == "__main__":
     print(example_sent)
     print(remove_stop_words(example_sent))
     print()
-    
+
     df = pd.DataFrame({"text": [text, example_sent]})
     print(preprocess_dataset(df))
