@@ -1,89 +1,70 @@
 import numpy as np
-from torch.utils.data import DataLoader, WeightedRandomSampler
+from torch.utils.data import DataLoader, WeightedRandomSampler, TensorDataset
 import pandas as pd
+import torch
 from transformers import AutoTokenizer, DataCollatorWithPadding
-import pandas as pd
-from torch.utils.data import DataLoader
 from datasets import Dataset
-from transformers import AutoTokenizer, DataCollatorWithPadding
+
+def class_weighting(df):
+   
+    labels = np.array(df['label'])
+    print("Labels:", str(labels))
+    
+    # Count occurrences of each class
+    class_counts = np.bincount(labels)
+    print("Class counts:", class_counts)
+    
+    # Compute inverse frequency weights
+    class_weights = 1.0 / class_counts  # Smaller class = higher weight
+    print("Class Weights:", class_weights)
+    
+    # Assign a weight to each sample
+    # Map each label to its corresponding class weight
+    sample_weights = class_weights[labels]
+    
+    # Define a sampler using these weights
+    sampler = WeightedRandomSampler(
+        weights=sample_weights, num_samples=len(sample_weights), replacement=True)
+
+    return sampler
 
 
-checkpoint = "microsoft/deberta-v3-small"
+if __name__ == "__main__":
+    dataset_path = "../../dataset/original_datasets/dontpatronizeme_pcl.tsv"
 
-# Perform tokenization
-tokenizer = AutoTokenizer.from_pretrained(checkpoint, model_max_length=512)
+    dataset = pd.read_csv(dataset_path, sep="\t", skiprows=4, names=['par_id', 'art_id', 'keyword', 'country', 'text', 'orig_label'], index_col=0)
+    dataset.head()
+    dataset.loc[dataset["text"].isna(), "text"] = ""
+    dataset["label"] = dataset["orig_label"].apply(lambda x : 0 if (x == 0 or x == 1) else 1)
 
+    print("Class Distribution Before Sampling:\n", dataset['label'].value_counts())
 
-def tokenize_function(example):
-    return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
+    # Generate sampler
+    sampler = class_weighting(dataset)
 
+    # Tokenize dataset
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-small", model_max_length=512)
+    
+    def tokenize_function(example):
+        return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
 
-# Example: Assume we have an imbalanced dataset with these labels
-# Example dataset with 3 classes (imbalanced)
-labels = np.array([0, 0, 1, 1, 1, 2, 2, 2, 2, 2])
+    dataset_hf = Dataset.from_pandas(dataset[['text', 'label']])
+    tokenized_dataset = dataset_hf.map(tokenize_function, batched=True, remove_columns=['text'])
 
-# Count occurrences of each class
-# e.g., [2, 3, 5] (how many samples per class)
-class_counts = np.bincount(labels)
+    # Convert tokenized dataset to PyTorch tensors
+    input_ids = torch.tensor(tokenized_dataset['input_ids'])
+    attention_mask = torch.tensor(tokenized_dataset['attention_mask'])
+    labels = torch.tensor(tokenized_dataset['label'])
 
-# Compute inverse frequency weights
-class_weights = 1.0 / class_counts  # Smaller class = higher weight
-print("Class Weights:", class_weights)
+    tensor_dataset = TensorDataset(input_ids, attention_mask, labels)
 
-# Assign a weight to each sample
-# Map each label to its corresponding class weight
-sample_weights = class_weights[labels]
+    # Create DataLoader with sampler
+    train_loader = DataLoader(tensor_dataset, batch_size=16, sampler=sampler)
+    num_samples = train_loader.sampler.num_samples
+    print("Number of samples used by the sampler:", num_samples)
 
-# Define a sampler using these weights
-sampler = WeightedRandomSampler(
-    weights=sample_weights, num_samples=len(sample_weights), replacement=True)
-
-train_dataset_path = "../dataset/dpm_pcl_train.csv"
-train_dataset = pd.read_csv(train_dataset_path)
-
-val_dataset_path = "../dataset/dpm_pcl_val.csv"
-val_dataset = pd.read_csv(val_dataset_path)
-
-test_dataset_path = "../dataset/dpm_pcl_test.csv"
-test_dataset = pd.read_csv(test_dataset_path)
-
-train_dataset.head()
-
-train_dataset["label"] = train_dataset["orig_label"].apply(
-    lambda x: 0 if (x == 0 or x == 1) else 1)
-val_dataset["label"] = val_dataset["orig_label"].apply(
-    lambda x: 0 if (x == 0 or x == 1) else 1)
-test_dataset["label"] = test_dataset["orig_label"].apply(
-    lambda x: 0 if (x == 0 or x == 1) else 1)
-
-train_dataset.loc[train_dataset["text"].isna(), "text"] = ""
-val_dataset.loc[val_dataset["text"].isna(), "text"] = ""
-test_dataset.loc[test_dataset["text"].isna(), "text"] = ""
-
-set_uncased = False
-if set_uncased:
-    train_dataset['text'] = train_dataset['text'].str.lower()
-    val_dataset['text'] = val_dataset['text'].str.lower()
-    test_dataset['text'] = test_dataset['text'].str.lower()
-
-train_dataset = train_dataset.drop(
-    ['par_id', 'art_id', 'keyword', 'country', 'orig_label'], axis=1)
-val_dataset = val_dataset.drop(
-    ['par_id', 'art_id', 'keyword', 'country', 'orig_label'], axis=1)
-test_dataset = test_dataset.drop(
-    ['par_id', 'art_id', 'keyword', 'country', 'orig_label'], axis=1)
-
-train_dataset.head()
-
-
-raw_datasets_train = Dataset.from_pandas(train_dataset[['text', 'label']])
-
-tokenized_datasets_train = raw_datasets_train.map(
-    tokenize_function, batched=True, remove_columns=['text'])
-
-# DataCollatorWithPadding constructs batches that are padded to the length of the longest sentence in the batch
-data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-
-# Example: Applying this to a PyTorch DataLoader
-train_loader = DataLoader(dataset=train_dataset,
-                          batch_size=16, sampler=sampler, collate_fn=data_collator)
+    # Check some sampled data
+    for batch in train_loader:
+        print("Sampled batch:", batch)
+        break  # Print one batch and exit
+    
