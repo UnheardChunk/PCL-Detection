@@ -1,6 +1,7 @@
 import random
 import nltk
 import pandas as pd
+from tqdm import tqdm
 from nltk.corpus import wordnet, stopwords
 
 STOPWORDS = stopwords.words("english")
@@ -82,7 +83,7 @@ def synonym_replacement(text, num_replacements):
 
 def augment_dataset(dataset, num_replacements=3):
     augmented_rows = []
-    for _, row in dataset.iterrows():
+    for _, row in tqdm(dataset.iterrows(), total=len(dataset)):
         augmented_text, _, _ = synonym_replacement(row["text"], num_replacements)
         augmented_rows.append({"text": augmented_text, "label": row["label"]})
     
