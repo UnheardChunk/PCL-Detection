@@ -10,9 +10,9 @@ def backtranslate_batch(texts):
     while count < 3:
         try:
             # Throttle slightly before making requests
-            time.sleep(0.5)
+            time.sleep(1.2)
             translated = GoogleTranslator(source="en", target="japanese").translate_batch(texts)
-            time.sleep(0.5)
+            time.sleep(1.2)
             return GoogleTranslator(source="japanese", target="en").translate_batch(translated)
         except Exception as e:
             time.sleep(5)
