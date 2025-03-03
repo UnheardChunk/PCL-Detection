@@ -30,7 +30,7 @@ def class_weighting(df):
 
 
 if __name__ == "__main__":
-    dataset_path = "../../dataset/original_datasets/dontpatronizeme_pcl.tsv"
+    dataset_path = "./dataset/original_datasets/dontpatronizeme_pcl.tsv"
 
     dataset = pd.read_csv(dataset_path, sep="\t", skiprows=4, names=['par_id', 'art_id', 'keyword', 'country', 'text', 'orig_label'], index_col=0)
     dataset.head()
@@ -59,12 +59,13 @@ if __name__ == "__main__":
     tensor_dataset = TensorDataset(input_ids, attention_mask, labels)
 
     # Create DataLoader with sampler
-    train_loader = DataLoader(tensor_dataset, batch_size=16, sampler=sampler)
+    train_loader = DataLoader(tensor_dataset, batch_size=8, sampler=sampler)
     num_samples = train_loader.sampler.num_samples
     print("Number of samples used by the sampler:", num_samples)
 
     # Check some sampled data
     for batch in train_loader:
-        print("Sampled batch:", batch)
+        # Print the distribution of labels in the batch
+        print("Batch labels distribution:", np.bincount(batch[2].numpy()))
         break  # Print one batch and exit
     

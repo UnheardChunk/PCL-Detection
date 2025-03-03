@@ -36,7 +36,7 @@ def undersample_random(df):
     return df_resampled
 
 if __name__ == "__main__":
-    dataset_path = "../../dataset/original_datasets/dontpatronizeme_pcl.tsv"
+    dataset_path = "./dataset/original_datasets/dontpatronizeme_pcl.tsv"
 
     dataset = pd.read_csv(dataset_path, sep="\t", skiprows=4, names=['par_id', 'art_id', 'keyword', 'country', 'text', 'orig_label'], index_col=0)
     dataset.head()
