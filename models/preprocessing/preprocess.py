@@ -25,20 +25,24 @@ def remove_punctuation(text):
     return re.sub(r"[^\w\s]|_", "", text)
     
 
-def lemmatize(text):
+def lemmatize_text(text):
     doc = nlp(text)
     return " ".join([token.lemma_ for token in doc])
     
 
-def preprocess_dataset(dataset):
-    # Remove punctuation from the text
-    dataset["text"] = dataset["text"].apply(remove_punctuation)
-
-    # Remove stop words from text
-    dataset["text"] = dataset["text"].apply(remove_stop_words)
+def preprocess_dataset(dataset, remove_punc=True, remove_stopwords=True, lemmatize=True):
     
-    # Lemmatize text
-    dataset["text"] = dataset["text"].apply(lemmatize)
+    if remove_punc:
+        # Remove punctuation from the text
+        dataset["text"] = dataset["text"].apply(remove_punctuation)
+
+    if remove_stopwords:
+        # Remove stop words from text
+        dataset["text"] = dataset["text"].apply(remove_stop_words)
+    
+    if lemmatize:
+        # Lemmatize text
+        dataset["text"] = dataset["text"].apply(lemmatize_text)
 
     return dataset
 
@@ -56,7 +60,7 @@ if __name__ == "__main__":
 
     text2 = "The cats are running faster than the mice"
     print(text2)
-    print(lemmatize(text2))
+    print(lemmatize_text(text2))
     print()
 
     df = pd.DataFrame({"text": [text, text3, text2]})
