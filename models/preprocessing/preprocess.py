@@ -34,11 +34,11 @@ def preprocess_dataset(dataset):
     # Remove punctuation from the text
     dataset["text"] = dataset["text"].apply(remove_punctuation)
 
-    # Lemmatize text
-    dataset["text"] = dataset["text"].apply(lemmatize)
-
     # Remove stop words from text
     dataset["text"] = dataset["text"].apply(remove_stop_words)
+    
+    # Lemmatize text
+    dataset["text"] = dataset["text"].apply(lemmatize)
 
     return dataset
 
@@ -59,5 +59,5 @@ if __name__ == "__main__":
     print(lemmatize(text2))
     print()
 
-    df = pd.DataFrame({"text: ": [text, text3,text2]})
+    df = pd.DataFrame({"text": [text, text3, text2]})
     print(preprocess_dataset(df))
