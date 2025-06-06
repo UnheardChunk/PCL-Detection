@@ -1,5 +1,11 @@
 # NLP Classifier for Patronizing and Condescending Language Detection
 
+## Contributors
+
+- Gabriel de Olim Gaul
+- Siya Gowda
+- Ryan Patel
+
 ## Overview
 
 This is code used for the NLP coursework submission at Imperial College London, implementing a Natural Language Processing (NLP) classifier to detect patronizing or condescending language in text, trained on the [_Don't Patronize Me!_ dataset](https://aclanthology.org/2020.coling-main.518/). All of the experiments and hyperparameter tuning can be found in `models/` directory.
